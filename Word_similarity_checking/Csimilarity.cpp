@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Csimilarity.h"
 #include <algorithm>
-
+#include <windows.h>
 Csimilarity::Csimilarity()
 {
 }
@@ -58,27 +58,9 @@ int Csimilarity::ModeTwo()
 	string path,temp;
 	cout << "input filepath" << endl;
 	cin >> path;
-	FILE *p=NULL;
-	p = fopen(path.c_str(), "r");
 
-	if (p==NULL)
-	{
-		cout << "open file error "<<endl;
-	}
-	char buf[24] = { 0 };
-	fscanf(p, "%s", buf);
-	while (!feof(p))
-	{
-		
-		temp = buf;
-		std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
-		if (keyword.count(temp) > 0)
-		{
-			P_Q++;
-		}
-		Q++;
-		fscanf(p, "%s", buf);
-	}
+	HandleFile(path);
+	
 
 	Compute();
 	Output();
@@ -89,6 +71,17 @@ int Csimilarity::ModeTwo()
 
 int Csimilarity::ModeThree()
 {
+
+	GetKeywords();
+	string path, temp;
+	WIN32_FIND_DATAA FileInfo;
+	cout << "input filepath" << endl;
+	cin >> path;
+	HANDLE hFind=FindFirstFileA(path.c_str(), &FileInfo);
+
+
+
+
 	return 0;
 }
 
@@ -133,4 +126,32 @@ bool Csimilarity::GetKeywords()
 		getline(cin, temp);
 	}
 	return true;
+}
+
+
+int Csimilarity::HandleFile(string &path)
+{
+	FILE *p = NULL;
+	p = fopen(path.c_str(), "r");
+
+	if (p == NULL)
+	{
+		cout << "open file error " << endl;
+	}
+	char buf[24] = { 0 };
+	string temp;
+	fscanf(p, "%s", buf);
+	while (!feof(p))
+	{
+
+		temp = buf;
+		std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+		if (keyword.count(temp) > 0)
+		{
+			P_Q++;
+		}
+		Q++;
+		fscanf(p, "%s", buf);
+	}
+	return 0;
 }

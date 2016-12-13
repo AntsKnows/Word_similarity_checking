@@ -21,5 +21,6 @@ public:
 	bool Init();
 	bool Output();
 	bool GetKeywords();
+	int HandleFile(string &path);
 };
 
