@@ -2,6 +2,7 @@
 #include "Csimilarity.h"
 #include <algorithm>
 #include <windows.h>
+#include <map>
 Csimilarity::Csimilarity()
 {
 }
@@ -71,16 +72,62 @@ int Csimilarity::ModeTwo()
 
 int Csimilarity::ModeThree()
 {
-
+	if (!Init())
+	{
+		cout << "Init error!";
+		return 0;
+	}
 	GetKeywords();
-	string path, temp;
-	WIN32_FIND_DATAA FileInfo;
-	cout << "input filepath" << endl;
-	cin >> path;
-	HANDLE hFind=FindFirstFileA(path.c_str(), &FileInfo);
+
+	string           path,firstpath, temp;
+	WIN32_FIND_DATA  FileInfo;
+	map<double, string> FileList;
+
+
+	//cout << "input filepath" << endl;
+	//cin >> path;
+	path = "d:\\aaa";
+	
+	firstpath =path+ "\\*.*";
 
 
 
+	HANDLE hFile=FindFirstFile(firstpath.c_str(), &FileInfo);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+
+		cout << "open directory error" << endl;
+		return 0;
+	}
+    
+	while (FindNextFile(hFile, &FileInfo))
+	{
+		if ((FileInfo.cFileName[0] == '.') || (FileInfo.cFileName[0] == '..'))
+			continue;
+		if (!(FileInfo.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && CompareFileType(FileInfo.cFileName))
+		{
+			if (!clear())
+			{
+				cout << "Clear error!";
+				return 0;
+			}
+			string temp = path + "\\" + FileInfo.cFileName;
+			HandleFile(temp);
+			Compute();
+			FileList.insert(make_pair(result, temp));
+
+		}
+	}
+
+	
+	
+
+	for (map<double, string>::iterator it = FileList.begin(); it != FileList.end();++it)
+	{
+		cout << "rank by similarity values" << endl;
+		cout << "Filename    " << "value" << endl;
+		cout << (*it).second << "     " << (*it).first << endl;
+	}
 
 	return 0;
 }
@@ -154,4 +201,26 @@ int Csimilarity::HandleFile(string &path)
 		fscanf(p, "%s", buf);
 	}
 	return 0;
+}
+
+
+bool Csimilarity::CompareFileType(char* filename)
+{
+	
+	char *suffix = strstr(filename, ".txt");
+	if (suffix != NULL)
+	{
+		return true;
+	}
+	return false;
+}
+
+
+bool Csimilarity::clear()
+{
+
+	result = 0;
+	Q = 0;
+	P_Q = 0;
+	return true;
 }

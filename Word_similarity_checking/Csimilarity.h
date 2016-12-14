@@ -22,5 +22,7 @@ public:
 	bool Output();
 	bool GetKeywords();
 	int HandleFile(string &path);
+	bool CompareFileType(char* filename);
+	bool clear();
 };
 

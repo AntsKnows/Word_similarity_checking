@@ -8,7 +8,7 @@ using namespace std;
 int _tmain(int argc, _TCHAR* argv[])
 {
 	Csimilarity a;
-	a.ModeTwo();
+	a.ModeThree();
 
 
 	system("pause");
