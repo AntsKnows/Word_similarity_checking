@@ -3,8 +3,22 @@
 #include <algorithm>
 #include <windows.h>
 #include <map>
-Csimilarity::Csimilarity()
+#include <vector>
+#include <utility>
+
+typedef pair<string, double> PAIR;
+
+//bool cmp_by_value(const PAIR& lhs, const PAIR& rhs) {
+//	return lhs.second < rhs.second;
+//}
+struct CmpByValue {
+	bool operator()(const PAIR& lhs, const PAIR& rhs) {
+		return lhs.second > rhs.second;
+	}
+};
+Csimilarity::Csimilarity() :P(0), Q(0), P_Q(0), result(0)
 {
+	keyword.clear();
 }
 
 
@@ -16,16 +30,15 @@ Csimilarity::~Csimilarity()
 int Csimilarity::ModeOne()
 {
 	
-	
 	if (!Init())
 	{
 		cout << "Init error!";
 		return 0;
 	}
-	
 	GetKeywords();
 
-	cout << "input your query" << endl;
+	cout << "Enter set of keywords for the query." << endl;
+	cout << "Enter keywords, one per line. Enter a blank line when finished." << endl;
 	string temp;
 	getline(cin, temp);
 	while (temp != "")
@@ -38,12 +51,8 @@ int Csimilarity::ModeOne()
 		Q++;
 		getline(cin, temp);
 	}
-
-
 	Compute();
 	Output();
-
-
 	return 0;
 }
 
@@ -57,11 +66,11 @@ int Csimilarity::ModeTwo()
 	}
 	GetKeywords();
 	string path,temp;
-	cout << "input filepath" << endl;
+	cout << "Enter path of the document." << endl;
+	cout << "Full path end with suffix txt ,i.e d:\\\\test.txt" << endl;
 	cin >> path;
 
 	HandleFile(path);
-	
 
 	Compute();
 	Output();
@@ -77,19 +86,18 @@ int Csimilarity::ModeThree()
 		cout << "Init error!";
 		return 0;
 	}
+
 	GetKeywords();
 
-	string           path,firstpath, temp;
-	WIN32_FIND_DATA  FileInfo;
-	map<double, string> FileList;
+	string                 path,firstpath, temp;
+	WIN32_FIND_DATA        FileInfo;
+	map<string, double>    FileList;
 
 
-	//cout << "input filepath" << endl;
-	//cin >> path;
-	path = "d:\\aaa";
-	
+	cout << "Enter path of the dirctory." << endl;
+	cout << "Full path . i.e d:\\\\test" << endl;
+	cin >> path;
 	firstpath =path+ "\\*.*";
-
 
 
 	HANDLE hFile=FindFirstFile(firstpath.c_str(), &FileInfo);
@@ -99,10 +107,14 @@ int Csimilarity::ModeThree()
 		cout << "open directory error" << endl;
 		return 0;
 	}
-    
-	while (FindNextFile(hFile, &FileInfo))
+	bool bfind = false;
+	do 
 	{
-		if ((FileInfo.cFileName[0] == '.') || (FileInfo.cFileName[0] == '..'))
+		bfind = FindNextFile(hFile, &FileInfo);
+
+		if ((FileInfo.cFileName[0] == '.')  || 
+			(FileInfo.cFileName[0] == '..') ||
+			(FileInfo.cFileName == ""))
 			continue;
 		if (!(FileInfo.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && CompareFileType(FileInfo.cFileName))
 		{
@@ -114,20 +126,29 @@ int Csimilarity::ModeThree()
 			string temp = path + "\\" + FileInfo.cFileName;
 			HandleFile(temp);
 			Compute();
-			FileList.insert(make_pair(result, temp));
+			FileList.insert(make_pair(FileInfo.cFileName, result));
 
 		}
-	}
+	} while (bfind);
 
-	
-	
 
-	for (map<double, string>::iterator it = FileList.begin(); it != FileList.end();++it)
+	vector<PAIR> vfilelist(FileList.begin(), FileList.end());
+	sort(vfilelist.begin(), vfilelist.end(), CmpByValue());
+	cout << "rank by similarity values" << endl;
+	cout << "Filename           " << "value" << endl;
+	for (size_t i = 0; i < vfilelist.size(); ++i)
 	{
-		cout << "rank by similarity values" << endl;
-		cout << "Filename    " << "value" << endl;
-		cout << (*it).second << "     " << (*it).first << endl;
+		
+		cout << vfilelist[i].first << "     " << vfilelist[i].second << endl;
 	}
+
+
+	//for (map<double, string>::const_reverse_iterator it = FileList.rbegin(); it != FileList.rend(); ++it)
+	//{
+	//	
+	//	cout << "Filename             " << "value" << endl;
+	//	cout << (*it).second << "     " << (*it).first << endl;
+	//}
 
 	return 0;
 }
@@ -142,12 +163,11 @@ int Csimilarity::Compute()
 
 bool Csimilarity::Init()
 {
-	result = 0;
 	P = 0;
 	Q = 0;
 	P_Q = 0;
+	result = 0;
 	keyword.clear();
-
 
 	return true;
 }
@@ -155,16 +175,18 @@ bool Csimilarity::Init()
 
 bool Csimilarity::Output()
 {
-	cout << P << " " << Q << " " << P_Q << " " << result << endl;
+	cout << "The similarity is  "<<result << endl;
 	return true;
 }
 
 
 bool Csimilarity::GetKeywords()
 {
-	cout << "input your keyword" << endl;
+	cout << "Enter set of keywords for the document." << endl;
+	cout << "Enter keywords, one per line. Enter a blank line when finished." << endl;
 	string temp;
 	getline(cin, temp);
+	
 	while (temp != "")
 	{
 		std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
@@ -190,7 +212,6 @@ int Csimilarity::HandleFile(string &path)
 	fscanf(p, "%s", buf);
 	while (!feof(p))
 	{
-
 		temp = buf;
 		std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
 		if (keyword.count(temp) > 0)
@@ -206,7 +227,6 @@ int Csimilarity::HandleFile(string &path)
 
 bool Csimilarity::CompareFileType(char* filename)
 {
-	
 	char *suffix = strstr(filename, ".txt");
 	if (suffix != NULL)
 	{
@@ -218,7 +238,6 @@ bool Csimilarity::CompareFileType(char* filename)
 
 bool Csimilarity::clear()
 {
-
 	result = 0;
 	Q = 0;
 	P_Q = 0;
